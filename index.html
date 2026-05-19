@@ -1006,23 +1006,43 @@ function addDot(lat, lon, own) {
   }).addTo(pinLayer);
 }
 
-// ── AOI reveal ────────────────────────────────────────────
+// ── AOI reveal / toggle ───────────────────────────────────
+let aoiBuilt = false;
+
 function revealAOI() {
-  aoiLayer = L.layerGroup().addTo(map);
-  VIENNA_AOI.features.forEach((f, i) => {
-    const c = COLOURS[i % COLOURS.length];
-    const p = f.properties;
-    L.geoJSON(f, { style: { color: c, weight: 2.5, fillColor: c, fillOpacity: 0.2 } })
-      .addTo(aoiLayer)
-      .bindPopup('<b>Flickr AOI #' + p.cluster_id + '</b><br>📸 ' + p.n_photos +
-        ' photos · 👥 ' + p.n_users + ' users<br><span style="color:#457B9D">' +
-        (p.top_tags||[]).slice(0,5).join(', ') + '</span>');
-  });
-  document.getElementById('btn-reveal').disabled = true;
-  document.getElementById('btn-reveal').textContent = '✓ AOIs visible';
-  document.getElementById('discuss').style.display = 'block';
-  document.getElementById('s-aoi').textContent = VIENNA_AOI.features.length;
-  showToast('🗺 Flickr AOIs revealed!');
+  const btn = document.getElementById('btn-reveal');
+
+  // First time — build the layer
+  if (!aoiBuilt) {
+    aoiLayer = L.layerGroup().addTo(map);
+    VIENNA_AOI.features.forEach((f, i) => {
+      const c = COLOURS[i % COLOURS.length];
+      const p = f.properties;
+      L.geoJSON(f, { style: { color: c, weight: 2.5, fillColor: c, fillOpacity: 0.2 } })
+        .addTo(aoiLayer)
+        .bindPopup('<b>Flickr AOI #' + p.cluster_id + '</b><br>📸 ' + p.n_photos +
+          ' photos · 👥 ' + p.n_users + ' users<br><span style="color:#457B9D">' +
+          (p.top_tags||[]).slice(0,5).join(', ') + '</span>');
+    });
+    aoiBuilt = true;
+    document.getElementById('discuss').style.display = 'block';
+    document.getElementById('s-aoi').textContent = VIENNA_AOI.features.length;
+    showToast('🗺 Flickr AOIs revealed!');
+    btn.textContent = '👁 Hide Flickr AOIs';
+    btn.style.background = '#6B6B80';
+    return;
+  }
+
+  // Toggle on/off after first reveal
+  if (map.hasLayer(aoiLayer)) {
+    map.removeLayer(aoiLayer);
+    btn.textContent = '🗺 Show Flickr AOIs';
+    btn.style.background = '#E8A020';
+  } else {
+    aoiLayer.addTo(map);
+    btn.textContent = '👁 Hide Flickr AOIs';
+    btn.style.background = '#6B6B80';
+  }
 }
 
 // ── Clear ─────────────────────────────────────────────────

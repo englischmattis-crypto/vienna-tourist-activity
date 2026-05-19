@@ -933,7 +933,7 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
   <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;">
     <div class="i-tag">In-Class Activity · Research Seminar POI &amp; VGI · Team 5</div>
     <h1 class="i-title">You're a tourist<br/>in <em>Vienna</em></h1>
-    <p class="i-sub">Where would you take photos? Your collective pins will form a heatmap — then we compare it to what thousands of real Flickr tourists actually photographed.</p>
+    <p class="i-sub">Where would you take photos? Your pins build a live heatmap, which we cluster into Areas of Interest. Then we reveal what thousands of real Flickr user actually photographed.</p>
     <div class="steps">
       <div class="step"><div class="step-n">1</div><div class="step-t">Open the map and <b>tap up to 10 spots</b> where you'd photograph as a tourist</div></div>
       <div class="step"><div class="step-n">2</div><div class="step-t">Think like someone seeing Vienna <b>for the first time</b></div></div>
@@ -16302,7 +16302,20 @@ const VIENNA_AOI = {
 
 // ── State ─────────────────────────────────────────────────
 const STUDENT_ID = 'student_' + Math.random().toString(36).substr(2,9);
-const COLOURS    = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261'];
+const COLOURS = [
+  '#457B9D',  // steel blue
+  '#2A9D8F',  // teal
+  '#E9C46A',  // yellow
+  '#F4A261',  // orange
+  '#264653',  // dark teal
+  '#6A0572',  // purple
+  '#1D8348',  // forest green
+  '#2471A3',  // royal blue
+  '#CB4335',  // brick
+  '#17A589',  // mint
+];
+// Student cluster colours — red palette, distinct from Flickr AOIs
+const STUDENT_COLOURS = ['#E63946','#FF6B6B','#C0392B','#E74C3C','#FF4757'];
 let myPins = 0, map, pinLayer, heatLayer, aoiLayer, clusterLayer;
 let allPinsCache = [];
 
@@ -16619,13 +16632,12 @@ function runDBSCAN() {
       clusters[c].push(points[i]);
     });
 
-    const CLUSTER_COLOURS = ['#E63946','#457B9D','#2A9D8F','#E9C46A','#F4A261',
-                              '#264653','#6A0572','#1D8348'];
+    // Uses global STUDENT_COLOURS (red palette, distinct from Flickr AOIs)
     let rendered = 0;
 
     Object.entries(clusters).forEach(([cid, pts]) => {
       if (pts.length < 2) return;
-      const colour = CLUSTER_COLOURS[parseInt(cid) % CLUSTER_COLOURS.length];
+      const colour = STUDENT_COLOURS[parseInt(cid) % STUDENT_COLOURS.length];
       const nUsers = new Set(pts.map(p => p.student_id)).size;
 
       // Draw individual points

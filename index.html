@@ -742,6 +742,10 @@ html, body { width: 100%; height: 100%; font-family: "DM Sans", sans-serif; over
 .btn-dbscan  { background: #2A9D8F; color: white; }
 .discuss { background: #F4F2ED; border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.55; border-left: 3px solid #1565A7; margin-bottom: 6px; }
 
+/* ── Leaflet attribution sits above our footer bar ─────── */
+.leaflet-bottom.leaflet-right { bottom: 22px !important; }
+.leaflet-control-attribution  { font-size: 10px !important; background: rgba(255,255,255,0.85) !important; }
+
 /* ── Toast ────────────────────────────────── */
 #toast {
   position: fixed; bottom: 24px; left: 50%;
@@ -821,6 +825,24 @@ html, body { width: 100%; height: 100%; font-family: "DM Sans", sans-serif; over
     <div class="discuss">Is the class more or less diverse than Flickr data?</div>
     <div class="discuss">What changes if locals pin instead of tourists?</div>
   </div>
+</div>
+
+<!-- Attribution footer -->
+<div id="attribution" style="
+  position:fixed; bottom:0; left:0; right:0;
+  background:rgba(255,255,255,0.85);
+  backdrop-filter:blur(4px);
+  padding:4px 12px;
+  font-size:10px;
+  color:#888;
+  z-index:400;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  pointer-events:none;
+">
+  <span>Map data © <a href="https://openstreetmap.org/copyright" target="_blank" style="color:#1565A7;pointer-events:all;">OpenStreetMap</a> contributors · Photo data: Flickr public API</span>
+  <span>Method: Hu et al. (2015) · Universität Wien Research Seminar POI &amp; VGI</span>
 </div>
 
 <!-- Toast -->
@@ -936,10 +958,10 @@ async function sbDelete() {
 
 // ── Map init ──────────────────────────────────────────────
 function initMap() {
-  map = L.map('map', { zoomControl: true }).setView([48.210, 16.370], 13);
+  map = L.map('map', { zoomControl: true, attributionControl: true }).setView([48.210, 16.370], 13);
 
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors',
     maxZoom: 19
   }).addTo(map);
 

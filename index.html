@@ -763,12 +763,13 @@ html, body { width: 100%; height: 100%; font-family: "DM Sans", sans-serif; over
     z-index: 400 !important;
     bottom: 22px !important;
     right: 4px !important;
-  }
-  /* Presenter: attribution shifts left when sidebar is open */
-  body.presenter .leaflet-bottom.leaflet-right {
-    right: 4px !important;
     transition: right 0.3s ease;
   }
+  /* Presenter sidebar closed: attribution stays at normal bottom-right */
+  body.presenter .leaflet-bottom.leaflet-right {
+    right: 4px !important;
+  }
+  /* Presenter sidebar open: attribution shifts left to clear the 260px sidebar */
   body.presenter.sidebar-open .leaflet-bottom.leaflet-right {
     right: 264px !important;
   }

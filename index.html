@@ -758,20 +758,18 @@ html, body { width: 100%; height: 100%; font-family: "DM Sans", sans-serif; over
     right: 260px;
     border-radius: 8px 0 0 8px;
   }
-  /* OSM attribution: lift above footer bar, visible for all mobile users */
-  .leaflet-bottom.leaflet-right {
-    z-index: 400 !important;
-    bottom: 22px !important;
-    right: 1px !important;
-    transition: right 0.3s ease;
+  /* OSM attribution: lift above footer bar for all mobile users.
+     Target both left and right corners since Leaflet places it
+     bottom-left on some mobile browsers. */
+  .leaflet-bottom.leaflet-right,
+  .leaflet-bottom.leaflet-left {
+    z-index: 500 !important;
+    bottom: 70px !important;
   }
-  /* Presenter sidebar closed: attribution stays at normal bottom-right */
-  body.presenter .leaflet-bottom.leaflet-right {
-    right: 1px !important;
-  }
-  /* Presenter sidebar open: attribution shifts left to clear the 260px sidebar */
-  body.presenter.sidebar-open .leaflet-bottom.leaflet-right {
-    right: 264px !important;
+  .leaflet-control-attribution {
+    font-size: 10px !important;
+    background: rgba(255,255,255,0.9) !important;
+    max-width: 200px;
   }
 }
 

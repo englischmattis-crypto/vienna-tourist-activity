@@ -742,6 +742,27 @@ html, body { width: 100%; height: 100%; font-family: "DM Sans", sans-serif; over
 .btn-dbscan  { background: #2A9D8F; color: white; }
 .discuss { background: #F4F2ED; border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.55; border-left: 3px solid #1565A7; margin-bottom: 6px; }
 
+/* ── Mobile sidebar ───────────────────────────────────── */
+@media (max-width: 768px) {
+  #sidebar {
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    width: 260px !important;
+    z-index: 550 !important;
+  }
+  #sidebar.open {
+    transform: translateX(0);
+  }
+  #sidebar-toggle {
+    display: block !important;
+  }
+  /* When sidebar open, show close icon */
+  #sidebar-toggle.open {
+    right: 260px;
+    border-radius: 8px 0 0 8px;
+  }
+}
+
 /* ── Leaflet attribution sits above our footer bar ─────── */
 .leaflet-bottom.leaflet-right { bottom: 22px !important; }
 .leaflet-control-attribution  { font-size: 10px !important; background: rgba(255,255,255,0.85) !important; }
@@ -803,6 +824,15 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
 <div id="instruction">📍 Tap anywhere on the map to place a pin</div>
 
 <!-- Presenter sidebar -->
+<!-- Sidebar toggle button (mobile) -->
+<button id="sidebar-toggle" onclick="toggleSidebar()"
+  style="display:none;position:fixed;top:60px;right:0;z-index:600;
+         background:#0D3B6E;color:white;border:none;
+         border-radius:8px 0 0 8px;padding:10px 8px;
+         font-size:18px;cursor:pointer;box-shadow:-2px 2px 8px rgba(0,0,0,0.3);">
+  ☰
+</button>
+
 <div id="sidebar">
   <div>
     <div class="s-title">Live stats</div>
@@ -818,23 +848,33 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
     <!-- DBSCAN parameter controls -->
     <div style="background:#F4F2ED;border-radius:8px;padding:12px;margin-bottom:2px;">
       <div class="s-title" style="margin-bottom:10px;">DBSCAN parameters</div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-        <label style="font-size:12px;color:#444;width:60px;flex-shrink:0;">Eps (m)</label>
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+        <label style="font-size:11px;color:#444;width:48px;flex-shrink:0;">Eps (m)</label>
         <input type="range" id="eps-slider" min="100" max="800" step="50" value="400"
           oninput="document.getElementById('eps-val').textContent=this.value"
-          style="flex:1;"/>
-        <span id="eps-val" style="font-size:12px;font-weight:600;color:#1565A7;width:36px;text-align:right;">400</span>
+          style="flex:1;min-width:0;"/>
+        <div style="background:white;border:1px solid #ddd;border-radius:5px;padding:2px 5px;
+                    font-size:12px;font-weight:600;color:#1565A7;min-width:38px;
+                    text-align:center;flex-shrink:0;">
+          <span id="eps-val">400</span>
+        </div>
       </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <label style="font-size:12px;color:#444;width:60px;flex-shrink:0;">MinPts</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <label style="font-size:11px;color:#444;width:48px;flex-shrink:0;">MinPts</label>
         <input type="range" id="minpts-slider" min="2" max="15" step="1" value="4"
           oninput="document.getElementById('minpts-val').textContent=this.value"
-          style="flex:1;"/>
-        <span id="minpts-val" style="font-size:12px;font-weight:600;color:#1565A7;width:36px;text-align:right;">4</span>
+          style="flex:1;min-width:0;"/>
+        <div style="background:white;border:1px solid #ddd;border-radius:5px;padding:2px 5px;
+                    font-size:12px;font-weight:600;color:#1565A7;min-width:38px;
+                    text-align:center;flex-shrink:0;">
+          <span id="minpts-val">4</span>
+        </div>
       </div>
     </div>
     <button class="btn btn-accent"  onclick="revealAOI()"     id="btn-reveal">🗺 Reveal Flickr AOIs</button>
     <button class="btn btn-primary" onclick="runDBSCAN()"    id="btn-dbscan">🔬 Run DBSCAN on pins</button>
+    <button class="btn" onclick="resetPolygons()" id="btn-reset-poly"
+      style="background:#E5E5F0;color:#444;display:none;">↺ Reset polygons</button>
     <button class="btn btn-primary" onclick="refreshPins()">🔄 Refresh now</button>
     <button class="btn btn-danger"  onclick="clearAll()">🗑 Clear all pins</button>
   </div>
@@ -883,7 +923,7 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
   <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;">
     <div class="i-tag">In-Class Activity · Research Seminar POI &amp; VGI · Team 5</div>
     <h1 class="i-title">You're a tourist<br/>in <em>Vienna</em></h1>
-    <p class="i-sub">Where would you take photos? Your collective pins will build a live heatmap, which we then cluster into AOIs. Finally we compare it to what thousands of real Flickr tourists actually photographed.</p>
+    <p class="i-sub">Where would you take photos? Your collective pins will form a heatmap — then we compare it to what thousands of real Flickr tourists actually photographed.</p>
     <div class="steps">
       <div class="step"><div class="step-n">1</div><div class="step-t">Open the map and <b>tap up to 10 spots</b> where you'd photograph as a tourist</div></div>
       <div class="step"><div class="step-n">2</div><div class="step-t">Think like someone seeing Vienna <b>for the first time</b></div></div>
@@ -1007,6 +1047,10 @@ function initMap() {
     document.getElementById('sidebar').style.display = 'flex';
     document.getElementById('my-pins').style.display = 'none';
     document.getElementById('instruction').textContent = '🖥 Presenter view';
+    // On mobile, show the toggle button (sidebar starts closed via CSS)
+    if (window.innerWidth <= 768) {
+      document.getElementById('sidebar-toggle').style.display = 'block';
+    }
   }
 
   setInterval(refreshPins, 3000);
@@ -1099,6 +1143,18 @@ function revealAOI() {
     btn.textContent = '👁 Hide Flickr AOIs';
     btn.style.background = '#6B6B80';
   }
+}
+
+// ── Reset polygons only ───────────────────────────────────
+function resetPolygons() {
+  if (clusterLayer) {
+    map.removeLayer(clusterLayer);
+    clusterLayer = null;
+  }
+  const btn = document.getElementById('btn-dbscan');
+  btn.disabled = false;
+  btn.textContent = '🔬 Run DBSCAN on pins';
+  document.getElementById('btn-reset-poly').style.display = 'none';
 }
 
 // ── Clear ─────────────────────────────────────────────────
@@ -1258,6 +1314,7 @@ function runDBSCAN() {
     const noiseCount = labels.filter(l => l === -1).length;
     document.getElementById('btn-dbscan').textContent = '✓ ' + rendered + ' clusters found';
     document.getElementById('btn-dbscan').disabled = true;
+    document.getElementById('btn-reset-poly').style.display = 'block';
     showToast('✓ ' + rendered + ' student AOIs · ' + noiseCount + ' noise points');
 
     // Update stat
@@ -1267,6 +1324,15 @@ function runDBSCAN() {
         : document.getElementById('s-aoi').textContent;
 
   }, 100); // small delay so toast shows first
+}
+
+// ── Sidebar toggle (mobile) ───────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const btn     = document.getElementById('sidebar-toggle');
+  const isOpen  = sidebar.classList.toggle('open');
+  btn.textContent = isOpen ? '✕' : '☰';
+  btn.classList.toggle('open', isOpen);
 }
 
 // ── Boot ──────────────────────────────────────────────────

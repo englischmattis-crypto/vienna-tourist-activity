@@ -753,13 +753,24 @@ html, body { width: 100%; height: 100%; font-family: "DM Sans", sans-serif; over
   #sidebar.open {
     transform: translateX(0);
   }
-  #sidebar-toggle {
-    display: block !important;
-  }
-  /* When sidebar open, show close icon */
+  /* Toggle button only shown for presenter via JS — never shown for students */
   #sidebar-toggle.open {
     right: 260px;
     border-radius: 8px 0 0 8px;
+  }
+  /* OSM attribution: lift above footer bar, visible for all mobile users */
+  .leaflet-bottom.leaflet-right {
+    z-index: 400 !important;
+    bottom: 22px !important;
+    right: 4px !important;
+  }
+  /* Presenter: attribution shifts left when sidebar is open */
+  body.presenter .leaflet-bottom.leaflet-right {
+    right: 4px !important;
+    transition: right 0.3s ease;
+  }
+  body.presenter.sidebar-open .leaflet-bottom.leaflet-right {
+    right: 264px !important;
   }
 }
 
@@ -1095,6 +1106,45 @@ async function refreshPins() {
     pinLayer.clearLayers();
     rows.forEach(r => addDot(r.lat, r.lon, r.student_id === STUDENT_ID));
   }
+
+  // Update overlap % if AOI is revealed
+  if (aoiBuilt && rows.length > 0) {
+    updateOverlap(rows);
+  }
+}
+
+// ── Point-in-polygon (ray casting) ───────────────────────
+function pointInPolygon(lon, lat, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    const intersect = ((yi > lat) !== (yj > lat)) &&
+      (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function pinInsideAOI(lon, lat) {
+  for (const feat of VIENNA_AOI.features) {
+    const geom = feat.geometry;
+    if (geom.type === 'Polygon') {
+      if (pointInPolygon(lon, lat, geom.coordinates[0])) return true;
+    } else if (geom.type === 'MultiPolygon') {
+      for (const poly of geom.coordinates) {
+        if (pointInPolygon(lon, lat, poly[0])) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function updateOverlap(rows) {
+  if (!rows.length) return;
+  const inside = rows.filter(r => pinInsideAOI(r.lon, r.lat)).length;
+  const pct = Math.round((inside / rows.length) * 100);
+  document.getElementById('s-overlap').textContent = pct + '%';
 }
 
 function addDot(lat, lon, own) {
@@ -1333,6 +1383,8 @@ function toggleSidebar() {
   const isOpen  = sidebar.classList.toggle('open');
   btn.textContent = isOpen ? '✕' : '☰';
   btn.classList.toggle('open', isOpen);
+  // Track open state on body for CSS attribution positioning
+  document.body.classList.toggle('sidebar-open', isOpen);
 }
 
 // ── Boot ──────────────────────────────────────────────────

@@ -795,7 +795,7 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
   </div>
   <div style="display:flex;align-items:center;">
     <div id="pin-badge">📍 <span id="live-count">0</span> pins</div>
-    <div id="my-pins">Your pins: <span id="my-count">0</span> / 8</div>
+    <div id="my-pins">Your pins: <span id="my-count">0</span> / 10</div>
   </div>
 </div>
 
@@ -815,6 +815,24 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
   </div>
   <div>
     <div class="s-title">Controls</div>
+    <!-- DBSCAN parameter controls -->
+    <div style="background:#F4F2ED;border-radius:8px;padding:12px;margin-bottom:2px;">
+      <div class="s-title" style="margin-bottom:10px;">DBSCAN parameters</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+        <label style="font-size:12px;color:#444;width:60px;flex-shrink:0;">Eps (m)</label>
+        <input type="range" id="eps-slider" min="100" max="800" step="50" value="400"
+          oninput="document.getElementById('eps-val').textContent=this.value"
+          style="flex:1;"/>
+        <span id="eps-val" style="font-size:12px;font-weight:600;color:#1565A7;width:36px;text-align:right;">400</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label style="font-size:12px;color:#444;width:60px;flex-shrink:0;">MinPts</label>
+        <input type="range" id="minpts-slider" min="2" max="15" step="1" value="4"
+          oninput="document.getElementById('minpts-val').textContent=this.value"
+          style="flex:1;"/>
+        <span id="minpts-val" style="font-size:12px;font-weight:600;color:#1565A7;width:36px;text-align:right;">4</span>
+      </div>
+    </div>
     <button class="btn btn-accent"  onclick="revealAOI()"     id="btn-reveal">🗺 Reveal Flickr AOIs</button>
     <button class="btn btn-primary" onclick="runDBSCAN()"    id="btn-dbscan">🔬 Run DBSCAN on pins</button>
     <button class="btn btn-primary" onclick="refreshPins()">🔄 Refresh now</button>
@@ -851,15 +869,29 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
 
 <!-- Intro overlay -->
 <div id="intro">
-  <div class="i-tag">In-Class Activity · Research Seminar POI &amp; VGI · Team 5</div>
-  <h1 class="i-title">You're a tourist<br/>in <em>Vienna</em></h1>
-  <p class="i-sub">Where would you take photos? Your collective pins will form a heatmap — then we compare it to what thousands of real Flickr tourists actually photographed.</p>
-  <div class="steps">
-    <div class="step"><div class="step-n">1</div><div class="step-t">Open the map and <b>tap up to 8 spots</b> where you'd photograph as a tourist</div></div>
-    <div class="step"><div class="step-n">2</div><div class="step-t">Think like someone seeing Vienna <b>for the first time</b></div></div>
-    <div class="step"><div class="step-n">3</div><div class="step-t">Watch the <b>live heatmap</b> on the projector build as everyone pins</div></div>
+
+  <!-- Background video -->
+  <video autoplay muted loop playsinline
+    style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;">
+    <source src="vienna.mp4" type="video/mp4"/>
+  </video>
+
+  <!-- Dark gradient overlay so text stays readable -->
+  <div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(13,59,110,0.82) 0%,rgba(21,101,167,0.75) 100%);z-index:1;"></div>
+
+  <!-- Content sits above video -->
+  <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;">
+    <div class="i-tag">In-Class Activity · Research Seminar POI &amp; VGI · Team 5</div>
+    <h1 class="i-title">You're a tourist<br/>in <em>Vienna</em></h1>
+    <p class="i-sub">Where would you take photos? Your collective pins will form a heatmap — then we compare it to what thousands of real Flickr tourists actually photographed.</p>
+    <div class="steps">
+      <div class="step"><div class="step-n">1</div><div class="step-t">Open the map and <b>tap up to 10 spots</b> where you'd photograph as a tourist</div></div>
+      <div class="step"><div class="step-n">2</div><div class="step-t">Think like someone seeing Vienna <b>for the first time</b></div></div>
+      <div class="step"><div class="step-n">3</div><div class="step-t">Watch the <b>live heatmap</b> on the projector build as everyone pins</div></div>
+    </div>
+    <button class="btn-start" onclick="start()">Start pinning →</button>
   </div>
-  <button class="btn-start" onclick="start()">Start pinning →</button>
+
 </div>
 
 <script>
@@ -888,7 +920,7 @@ L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(t,i){this._lat
 const SUPABASE_URL  = 'https://kcozkwdumxtcdtytsjsa.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtjb3prd2R1bXh0Y2R0eXRzanNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwOTAyNTEsImV4cCI6MjA5NDY2NjI1MX0.BQ52BIbQxLBVbDOpWw87vep5vLY1KDGQP7KExLP2V_0';
 const SESSION_ID    = 'seminar_2026';
-const MAX_PINS      = 8;
+const MAX_PINS      = 10;
 const IS_PRESENTER  = location.search.includes('presenter');
 
 // ── Vienna AOI placeholder (replace with real pipeline output) ─
@@ -988,7 +1020,7 @@ async function onMapClick(e) {
   document.getElementById('my-count').textContent = myPins;
   addDot(e.latlng.lat, e.latlng.lng, true);
   bump();
-  showToast('📸 Photo ' + myPins + ' of ' + MAX_PINS + ' placed!');
+  showToast('📸 Photo ' + myPins + ' of ' + MAX_PINS + ' — keep going!');
   if (myPins >= MAX_PINS)
     document.getElementById('instruction').textContent = '✓ All photos placed — watch the heatmap!';
   await sbInsert(e.latlng.lat, e.latlng.lng);
@@ -1169,11 +1201,11 @@ function runDBSCAN() {
   clusterLayer = L.layerGroup().addTo(map);
 
   const points = allPinsCache;
-  const nStudents = new Set(points.map(p => p.student_id)).size;
-  const minPts = Math.max(2, Math.ceil(nStudents * 0.02));
-  const EPS_M  = 200;
+  // Read parameters from sliders — tuned for student dataset scale
+  const EPS_M  = parseInt(document.getElementById('eps-slider').value);
+  const minPts = parseInt(document.getElementById('minpts-slider').value);
 
-  showToast('Running DBSCAN… Eps=200m, MinPts=' + minPts);
+  showToast('Running DBSCAN… Eps=' + EPS_M + 'm, MinPts=' + minPts + ' (' + points.length + ' pins)');
 
   setTimeout(() => {
     const { labels, nClusters } = dbscan(points, EPS_M, minPts);
@@ -1216,7 +1248,7 @@ function runDBSCAN() {
             .bindPopup(
               '<b style="color:' + colour + '">Student AOI #' + cid + '</b><br/>' +
               '📍 ' + pts.length + ' pins · 👥 ' + nUsers + ' students<br/>' +
-              '<span style="font-size:11px;color:#666">Eps=200m · MinPts=' + minPts + '</span>'
+              '<span style="font-size:11px;color:#666">Eps=' + EPS_M + 'm · MinPts=' + minPts + '</span>'
             );
         }
       }

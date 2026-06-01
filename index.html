@@ -870,26 +870,41 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
         </div>
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <label style="font-size:11px;color:#444;width:48px;flex-shrink:0;">MinPts</label>
-        <input type="range" id="minpts-slider" min="2" max="15" step="1" value="4"
-          oninput="document.getElementById('minpts-val').textContent=this.value"
+        <label style="font-size:11px;color:#444;width:48px;flex-shrink:0;">MinPts %</label>
+        <input type="range" id="minpts-slider" min="1" max="100" step="1" value="5"
+          oninput="document.getElementById('minpts-val').textContent=this.value+'%'"
           style="flex:1;min-width:0;"/>
         <div style="background:white;border:1px solid #ddd;border-radius:5px;padding:2px 5px;
-                    font-size:12px;font-weight:600;color:#1565A7;min-width:38px;
+                    font-size:12px;font-weight:600;color:#1565A7;min-width:42px;
                     text-align:center;flex-shrink:0;">
-          <span id="minpts-val">4</span>
+          <span id="minpts-val">5%</span>
         </div>
       </div>
     </div>
+    <!-- Step 1: cluster the student pins -->
+    <button class="btn btn-primary" onclick="runDBSCAN()" id="btn-dbscan"
+      style="margin-bottom:4px;">🔬 Run DBSCAN on pins</button>
+    <button class="btn" onclick="resetPolygons()" id="btn-reset-poly"
+      style="background:#E5E5F0;color:#444;display:none;margin-bottom:10px;">↺ Reset polygons</button>
+
+    <!-- Step 2: reveal the Flickr AOIs for comparison -->
     <button class="btn btn-accent" onclick="toggleAOIPaper()" id="btn-reveal-paper"
       style="background:#D4691A;margin-bottom:4px;">🟠 Show paper AOIs</button>
     <button class="btn btn-accent" onclick="toggleAOITuned()" id="btn-reveal-tuned"
-      style="background:#2A9D8F;">🟢 Show tuned AOIs</button>
-    <button class="btn btn-primary" onclick="runDBSCAN()"    id="btn-dbscan">🔬 Run DBSCAN on pins</button>
-    <button class="btn" onclick="resetPolygons()" id="btn-reset-poly"
-      style="background:#E5E5F0;color:#444;display:none;">↺ Reset polygons</button>
-    <button class="btn btn-primary" onclick="refreshPins()">🔄 Refresh now</button>
+      style="background:#2A9D8F;margin-bottom:10px;">🟢 Show tuned AOIs</button>
+
+    <!-- Utility controls -->
+    <button class="btn" onclick="togglePins()" id="btn-toggle-pins"
+      style="background:#E5E5F0;color:#444;margin-bottom:4px;">👁 Hide pins</button>
+    <button class="btn btn-primary" onclick="refreshPins()" style="margin-bottom:4px;">🔄 Refresh now</button>
     <button class="btn btn-danger"  onclick="clearAll()">🗑 Clear all pins</button>
+  </div>
+  <div id="discuss" style="display:none">
+    <div class="s-title">💬 Discussion</div>
+    <div class="discuss">Where do class pins cluster vs. Flickr AOIs?</div>
+    <div class="discuss">Which areas did students pick that Flickr tourists missed?</div>
+    <div class="discuss">Is the class more or less diverse than Flickr data?</div>
+    <div class="discuss">What changes if locals pin instead of tourists?</div>
   </div>
 </div>
 
@@ -929,13 +944,13 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
   <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;">
     <div class="i-tag">In-Class Activity · Research Seminar POI &amp; VGI · Team 5</div>
     <h1 class="i-title">You're a tourist<br/>in <em>Vienna</em></h1>
-    <p class="i-sub">Where would you take photos? Your pins build a live map, which we cluster into Areas of Interest. Then we reveal what Flickr user in 2025 actually photographed.</p>
+    <p class="i-sub">Where would you take photos? Your pins build a live map, which we cluster into Areas of Interest. Then we reveal what Flickr users actually photographed in 2025.</p>
     <div class="steps">
-     <div class="step"><div class="step-n">1</div><div class="step-t">You have a camera with <b>10 shots left.</div></div>
-     <div class="step"><div class="step-n">2</div><div class="step-t">Tap up to <b>10 spots</b> on the map where you would use them.</div></div>
-	
-     <div class="step"><div class="step-n">3</div><div class="step-t">Watch the map <b>fill up on the projector</b> as everyone pins their shots.</div></div>
+      <div class="step"><div class="step-n">1</div><div class="step-t">You have a camera with <b>10 shots left</b>, and you are a tourist in Vienna for the first time.</div></div>
+      <div class="step"><div class="step-n">2</div><div class="step-t">Tap up to <b>10 spots</b> on the map where you would use them.</div></div>
+      <div class="step"><div class="step-n">3</div><div class="step-t">Watch the map <b>fill up on the projector</b> as everyone pins their shots.</div></div>
     </div>
+  </div>
     <button class="btn-start" onclick="start()">Start pinning →</button>
   </div>
 
@@ -994,6 +1009,7 @@ const COLOURS_PAPER = [
   '#BC6C25','#C68642','#9B7653','#7B5B3A','#6B4226',
 ];
 let myPins = 0, map, pinLayer, clusterLayer;
+let pinsVisible = true;
 let allPinsCache = [];
 
 // ── Supabase ──────────────────────────────────────────────
@@ -1069,23 +1085,51 @@ async function onMapClick(e) {
 async function refreshPins() {
   const rows = await sbFetch();
   allPinsCache = rows;
-  const total    = rows.length;
-  const students = new Set(rows.map(r => r.student_id)).size;
 
-  document.getElementById('live-count').textContent = total;
-  document.getElementById('s-total').textContent    = total;
-  document.getElementById('s-students').textContent = students;
-
-  // Presenter pins
-  if (IS_PRESENTER) {
+  // Redraw presenter pins (respecting current visibility toggle)
+  if (IS_PRESENTER && pinsVisible) {
     pinLayer.clearLayers();
     rows.forEach(r => addDot(r.lat, r.lon, r.student_id === STUDENT_ID));
   }
 
-  // Update overlap if any AOI layer is visible
-  const _aoiOn = (aoiPaperLayer && map.hasLayer(aoiPaperLayer)) ||
-                 (aoiTunedLayer && map.hasLayer(aoiTunedLayer));
-  if (_aoiOn && rows.length > 0) updateOverlap(rows);
+  updateStats();
+}
+
+// ── Centralised live-stats updater ────────────────────────
+// Called on every poll AND on every toggle so values never drift.
+function updateStats() {
+  const rows     = allPinsCache || [];
+  const total    = rows.length;
+  const students = new Set(rows.map(r => r.student_id)).size;
+
+  const liveEl = document.getElementById('live-count');
+  if (liveEl) liveEl.textContent = total;
+  const totalEl = document.getElementById('s-total');
+  if (totalEl) totalEl.textContent = total;
+  const studEl = document.getElementById('s-students');
+  if (studEl) studEl.textContent = students;
+
+  // AOI count + overlap depend on which layers are visible
+  const paperOn = aoiPaperLayer && map.hasLayer(aoiPaperLayer);
+  const tunedOn = aoiTunedLayer && map.hasLayer(aoiTunedLayer);
+  const aoiEl     = document.getElementById('s-aoi');
+  const overlapEl = document.getElementById('s-overlap');
+
+  if (paperOn && tunedOn) {
+    aoiEl.textContent = VIENNA_AOI_PAPER.features.length + '+' + VIENNA_AOI_TUNED.features.length;
+  } else if (paperOn) {
+    aoiEl.textContent = VIENNA_AOI_PAPER.features.length;
+  } else if (tunedOn) {
+    aoiEl.textContent = VIENNA_AOI_TUNED.features.length;
+  } else {
+    aoiEl.textContent = '—';
+  }
+
+  if ((paperOn || tunedOn) && total > 0) {
+    updateOverlap(rows);
+  } else {
+    overlapEl.textContent = '—';
+  }
 }
 
 // ── Point-in-polygon (ray casting) ───────────────────────
@@ -1224,20 +1268,14 @@ function updateActiveAOI() {
   if (paperOn && tunedOn) {
     VIENNA_AOI = { type:"FeatureCollection",
       features: VIENNA_AOI_PAPER.features.concat(VIENNA_AOI_TUNED.features) };
-    document.getElementById('s-aoi').textContent =
-      VIENNA_AOI_PAPER.features.length + ' + ' + VIENNA_AOI_TUNED.features.length;
   } else if (paperOn) {
     VIENNA_AOI = VIENNA_AOI_PAPER;
-    document.getElementById('s-aoi').textContent = VIENNA_AOI_PAPER.features.length + ' (paper)';
   } else if (tunedOn) {
     VIENNA_AOI = VIENNA_AOI_TUNED;
-    document.getElementById('s-aoi').textContent = VIENNA_AOI_TUNED.features.length + ' (tuned)';
   } else {
     VIENNA_AOI = { type:"FeatureCollection", features:[] };
-    document.getElementById('s-aoi').textContent = '—';
-    document.getElementById('s-overlap').textContent = '—';
   }
-  if (allPinsCache && allPinsCache.length && (paperOn || tunedOn)) updateOverlap(allPinsCache);
+  updateStats();
 }
 
 // Legacy stub — no longer used, kept to avoid any lingering references
@@ -1255,14 +1293,32 @@ function resetPolygons() {
   document.getElementById('btn-reset-poly').style.display = 'none';
 }
 
+// ── Toggle pin visibility ─────────────────────────────────
+function togglePins() {
+  const btn = document.getElementById('btn-toggle-pins');
+  pinsVisible = !pinsVisible;
+  if (pinsVisible) {
+    if (!map.hasLayer(pinLayer)) pinLayer.addTo(map);
+    // Redraw current pins
+    pinLayer.clearLayers();
+    allPinsCache.forEach(r => addDot(r.lat, r.lon, r.student_id === STUDENT_ID));
+    btn.textContent = '👁 Hide pins';
+    btn.style.background = '#E5E5F0';
+  } else {
+    map.removeLayer(pinLayer);
+    btn.textContent = '👁 Show pins';
+    btn.style.background = '#D4691A';
+    btn.style.color = 'white';
+  }
+}
+
 // ── Clear ─────────────────────────────────────────────────
 async function clearAll() {
   if (!confirm('Clear ALL pins?')) return;
   await sbDelete();
   pinLayer.clearLayers();
-  document.getElementById('live-count').textContent = '0';
-  document.getElementById('s-total').textContent    = '0';
-  document.getElementById('s-students').textContent = '0';
+  allPinsCache = [];
+  updateStats();
   showToast('Cleared');
 }
 
@@ -1354,11 +1410,15 @@ function runDBSCAN() {
   clusterLayer = L.layerGroup().addTo(map);
 
   const points = allPinsCache;
-  // Read parameters from sliders — tuned for student dataset scale
-  const EPS_M  = parseInt(document.getElementById('eps-slider').value);
-  const minPts = parseInt(document.getElementById('minpts-slider').value);
+  // Read parameters from sliders
+  const EPS_M    = parseInt(document.getElementById('eps-slider').value);
+  const minptsPct = parseInt(document.getElementById('minpts-slider').value);
+  // MinPts = percentage of unique students, floored at 2
+  const nStudents = new Set(points.map(p => p.student_id)).size;
+  const minPts = Math.max(2, Math.round(nStudents * minptsPct / 100));
 
-  showToast('Running DBSCAN… Eps=' + EPS_M + 'm, MinPts=' + minPts + ' (' + points.length + ' pins)');
+  showToast('Running DBSCAN… Eps=' + EPS_M + 'm, MinPts=' + minPts +
+            ' (' + minptsPct + '% of ' + nStudents + ' students)');
 
   setTimeout(() => {
     const { labels, nClusters } = dbscan(points, EPS_M, minPts);
@@ -1413,11 +1473,9 @@ function runDBSCAN() {
     document.getElementById('btn-reset-poly').style.display = 'block';
     showToast('✓ ' + rendered + ' student AOIs · ' + noiseCount + ' noise points');
 
-    // Update stat
-    document.getElementById('s-aoi').textContent =
-      document.getElementById('s-aoi').textContent === '—'
-        ? rendered + '★'
-        : document.getElementById('s-aoi').textContent;
+    // Student cluster count is shown in the button text;
+    // the "Flickr AOIs" stat stays reserved for the Flickr layers.
+    updateStats();
 
   }, 100); // small delay so toast shows first
 }

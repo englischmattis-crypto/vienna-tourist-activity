@@ -806,9 +806,20 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
 @media (max-height: 760px) {
   #intro { justify-content: flex-start; padding-top: 24px; padding-bottom: 24px; }
 }
-/* Video + gradient backgrounds must stay fixed while content scrolls */
+/* Video + gradient backgrounds must stay fixed while content scrolls,
+   and must never intercept clicks meant for the content above them */
 #intro > video,
-#intro > div[style*="position:absolute"] { position: fixed !important; }
+#intro > div[style*="position:absolute"] {
+  position: fixed !important;
+  pointer-events: none !important;
+}
+/* Content wrapper and button must always be on top and clickable */
+#intro > div[style*="position:relative"] {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+.btn-start { position: relative; z-index: 11; pointer-events: auto; }
 .i-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 16px; }
 .i-title { font-family: "Playfair Display", serif; font-size: clamp(36px,8vw,60px); font-weight: 700; color: white; line-height: 1.1; margin-bottom: 12px; }
 .i-title em { color: #E8A020; }
@@ -959,7 +970,6 @@ body.presenter .leaflet-bottom.leaflet-right { right: 285px !important; }
       <div class="step"><div class="step-n">2</div><div class="step-t">Tap up to <b>10 spots</b> on the map where you would use them.</div></div>
       <div class="step"><div class="step-n">3</div><div class="step-t">Watch the map <b>fill up on the projector</b> as everyone pins their shots.</div></div>
     </div>
-  </div>
     <button class="btn-start" onclick="start()">Start pinning →</button>
   </div>
 
